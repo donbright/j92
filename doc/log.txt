@@ -1,0 +1,43 @@
+day one.
+
+I am deciding to make a library that only produces Convex Polyhedra of
+regular faces, aka the Johnson Solids.
+
+by limting to just these i think i will be able to accomplish the goal
+because the goal exists and is definite. limitations can sometimes bring
+about important help to a project and a person
+
+------------
+
+
+i cannot decide exactly how to structure things. my main point right now
+is that in storing polyhedron points, vertices, i dont know if i want
+to store the vertices and then the faces as indexes to the vertices,
+
+or just store faces as a sequence of vertices. this lists some vertices
+multiple times, should i care? 
+
+the upside is its comptaible with a bunch of different file formats
+
+the downside is that it is kind of more clean / elegant to do all vertcies
+then thre is just basically a single type of data, lists of vertices.
+
+guess i will stick with tradition for now. 
+
+
+
+-----------
+
+ 
+
+
+generics - learning about generics in rust, im using Chat GPT as a kind
+of professor to help me understand. and this is why i need num_traits
+so i can multiply a generic type by a number 1 or -1
+----------
+
+trait bounds
+
+by restricting which traits your code is enabled for you can 
+like, make generic, but not totally generic, you can do stuff
+with it. like add. 
