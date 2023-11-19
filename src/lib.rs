@@ -121,13 +121,16 @@ impl<T> Point<T> {
     }
 }
 
+impl<T: PartialEq> PartialEq for Point<T> {
+    fn eq(&self, o: &Self) -> bool {
+        self.x == o.x && self.y == o.y && self.z == o.z
+    }
+}
+
+
 //use crate::*;
 //use core::iter::once;
 //   use chull::ConvexHullWrapper;
-
-/// # Base Shapes
-///
-/// Start shape creation methods.
 
 // take a string "x" and return x a floating point number
 // special symbols understood:
@@ -136,10 +139,9 @@ impl<T> Point<T> {
 //    Φ⁻¹ inverse golden ratio
 //    √2 square root of 2
 //    etc etc
-
 fn floatify<T>(s: &str) -> T
 where
-    T: Float + FromStr + std::fmt::Debug + std::fmt::Display,
+    T: FromStr + std::fmt::Debug + std::fmt::Display,
     <T as FromStr>::Err: Debug,
 {
     let one = T::from(1.0).unwrap();
@@ -184,7 +186,8 @@ where
 // understand Φ as the golden ratio, and other symbols.
 fn seed_points<T>(s: &str) -> impl Iterator<Item = Point<T>>
 where
-    T: NumCast + Copy + std::ops::Mul<f32> + std::ops::Mul<f64>,
+    T: NumCast + Copy + std::fmt::Display + std::str::FromStr + std::fmt::Debug,
+ <T as FromStr>::Err: Debug
 {
     let unity: T = NumCast::from(1.0).unwrap();
     let negity: T = NumCast::from(-1.0).unwrap();
@@ -193,7 +196,7 @@ where
     for n in s.replace(" ", "").split(",") {
         match n.chars().nth(0).unwrap() {
             '±' => {
-                //                    let f = floatify(n.split("±").nth(1).unwrap());
+                let f:T = floatify(n.split("±").nth(1).unwrap());
                 //                    v.push(vec![NumCast::from(unity* f).unwrap(), NumCast::from(negity * f).unwrap()]);
             }
             _ => (), //v.push(vec![floatify::<T>(n)]),
@@ -205,11 +208,11 @@ where
 #[cfg(test)]
 #[test]
 fn test_seed_points() {
-    for p in seed_points("0,0,±1") {
+    for p in seed_points::<f32>("0,0,±1") {
         println!("{:?}", p);
     }
     itertools::assert_equal(
-        seed_points("0,0,±1"),
+        seed_points::<f32>("0,0,±1"),
         vec![Point::new(0., 0., 1.), Point::new(0., 0., -1.)],
     );
 
