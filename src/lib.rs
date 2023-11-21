@@ -93,13 +93,6 @@ pub enum JohnsonSolid {
     TriangularHebesphenorotunda,
 }
 
-// so we can have generic functions multiply a variable of generic number type
-//  by 1 or -1
-use num_traits::NumCast;
-
-// allows us to use multiple kinds of floating point binary numbers
-use num_traits::Float;
-
 // lets us convert strings to numbers
 use std::fmt::Debug;
 use std::str::FromStr;
@@ -127,28 +120,23 @@ impl<T: PartialEq> PartialEq for Point<T> {
     }
 }
 
-
-//use crate::*;
-//use core::iter::once;
-//   use chull::ConvexHullWrapper;
-
-// take a string "x" and return x a floating point number
-// special symbols understood:
-//    Φ golden ratio
-//	  Φ′ golden ratio conjugate
-//    Φ⁻¹ inverse golden ratio
-//    √2 square root of 2
-//    etc etc
+/// take a string "x" and return x a floating point number
+/// special symbols understood:
+///    Φ golden ratio
+///	  Φ′ golden ratio conjugate
+///    Φ⁻¹ inverse golden ratio
+///    √2 square root of 2
+///    etc etc
 fn floatify<T>(s: &str) -> T
 where
-    T: FromStr + std::fmt::Debug + std::fmt::Display,
+    T: num_traits::Float + FromStr + std::fmt::Debug + std::fmt::Display,
     <T as FromStr>::Err: Debug,
 {
-    let one = T::from(1.0).unwrap();
-    let two = T::from(2.0).unwrap();
-    let three = T::from(3.0).unwrap();
-    let four = T::from(4.0).unwrap();
-    let five = T::from(5.0).unwrap();
+    let one: T = T::one();
+    let two : T= one + one;
+    let three: T=two + one;
+    let four: T=two + two;
+    let five: T=four + one;
 
     let phi = (one + five.sqrt()) / two;
     let phiprime = (one - five.sqrt()) / two;
@@ -176,7 +164,8 @@ where
         .replace("_", "") // mimic rust float literal syntax
         .replace(" ", "");
     println!("{:?}", f);
-    T::from_str(&f).unwrap()
+    s.parse::<T>().unwrap()
+//    T::from_str(&f).unwrap()
 }
 
 // given a string like = "±2,0,0" expand the plusminus and create
@@ -186,11 +175,11 @@ where
 // understand Φ as the golden ratio, and other symbols.
 fn seed_points<T>(s: &str) -> impl Iterator<Item = Point<T>>
 where
-    T: NumCast + Copy + std::fmt::Display + std::str::FromStr + std::fmt::Debug,
+    T: num_traits::Float + Copy + std::fmt::Display + std::str::FromStr + std::fmt::Debug,
  <T as FromStr>::Err: Debug
 {
-    let unity: T = NumCast::from(1.0).unwrap();
-    let negity: T = NumCast::from(-1.0).unwrap();
+    let unity: T = T::one();
+    let negity: T = -unity;
 
     let mut v: Vec<Vec<T>> = Vec::new();
     for n in s.replace(" ", "").split(",") {
