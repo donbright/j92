@@ -140,7 +140,7 @@ where
 
     let phi = (one + five.sqrt()) / two;
     let phiprime = (one - five.sqrt()) / two;
-    println!(":{}", s);
+    println!("string input {}", s);
     let s = s.replace("φ", "Φ");
     let f = s
         .replace("√(Φ′+2)", &format!("{}", (phiprime + two).sqrt()))
@@ -163,9 +163,8 @@ where
         .replace("--", "")
         .replace("_", "") // mimic rust float literal syntax
         .replace(" ", "");
-    println!("{:?}", f);
+    println!("float output {:?}", f);
     s.parse::<T>().unwrap()
-//    T::from_str(&f).unwrap()
 }
 
 // given a string like = "±2,0,0" expand the plusminus and create
@@ -186,9 +185,9 @@ where
         match n.chars().nth(0).unwrap() {
             '±' => {
                 let f:T = floatify(n.split("±").nth(1).unwrap());
-                //                    v.push(vec![NumCast::from(unity* f).unwrap(), NumCast::from(negity * f).unwrap()]);
+                v.push(vec![f, -f]);
             }
-            _ => (), //v.push(vec![floatify::<T>(n)]),
+            _ => v.push(vec![floatify(n)]),
         }
     }
     iproduct!(v[0].clone(), v[1].clone(), v[2].clone()).map(|v| Point::new(v.0, v.1, v.2))
