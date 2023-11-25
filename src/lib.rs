@@ -1,3 +1,5 @@
+pub mod rotations;
+
 pub enum JohnsonSolid {
     SsquarePyramid,
     PentagonalPyramid,
@@ -100,7 +102,7 @@ use std::str::FromStr;
 // to help us deal with the +/- notation
 use itertools::iproduct;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 struct Point<T> {
     x: T,
     y: T,
@@ -211,73 +213,6 @@ fn test_seed_points() {
     );
 }
 
-
-/*
-struct Rotations<T, I> {
-    inner: I,
-    last_point: Option<Point<T>>,
-    start_count: u8,
-    count: u8,
-}
-
-impl<I, R, T> Iterator for Rotations<I, T>
-where
-    I: Iterator<Item = R>,
-    R: RotationsValue<T>,
-{
-    type Item = Point<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        println!("next. sc{} c{}", self.start_count, self.count);
-        if self.count == self.start_count {
-            println!("m1 next. sc{} c{}", self.start_count, self.count);
-            self.count -= 1;
-            self.last_point = self.inner.next().map(|x| x.rotations_value());
-        } else {
-            self.count -= 1;
-            let p = self.last_point.unwrap();
-            if self.count == 0 {
-                self.count = self.start_count;
-            }
-            self.last_point = Some(Point::new(p.z, p.x, p.y))
-        }
-        self.last_point
-    }
-}
-*/
-
-
-#[cfg(test)]
-#[test]
-fn test_rotations() {
-    itertools::assert_equal(
-        vec![Point::new(1., 2., 3.)].iter().rotations(3),
-        vec![
-            Point::new(1., 2., 3.),
-            Point::new(3., 1., 2.),
-            Point::new(2., 3., 1.),
-        ]
-        .into_iter(),
-    );
-    itertools::assert_equal(
-        vec![Point::new(1., 2., 3.)].iter().rotations(2),
-        vec![Point::new(1., 2., 3.), Point::new(3., 1., 2.)].into_iter(),
-    );
-    itertools::assert_equal(
-        vec![Point::new(1., 2., 3.), Point::new(1., 2., -3.)]
-            .iter()
-            .rotations(3),
-        vec![
-            Point::new(1., 2., 3.),
-            Point::new(3., 1., 2.),
-            Point::new(2., 3., 1.),
-            Point::new(1., 2., -3.),
-            Point::new(-3., 1., 2.),
-            Point::new(2., -3., 1.),
-        ]
-        .into_iter(),
-    );
-}
 
 #[cfg(feature = "not_used")]
 mod unused {
