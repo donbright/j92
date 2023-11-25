@@ -100,7 +100,6 @@ use std::str::FromStr;
 // to help us deal with the +/- notation
 use itertools::iproduct;
 
-// basic 3d point
 #[derive(Debug)]
 struct Point<T> {
     x: T,
@@ -123,7 +122,7 @@ impl<T: PartialEq> PartialEq for Point<T> {
 /// take a string "x" and return x a floating point number
 /// special symbols understood:
 ///    Φ golden ratio
-///	  Φ′ golden ratio conjugate
+///	   Φ′ golden ratio conjugate
 ///    Φ⁻¹ inverse golden ratio
 ///    √2 square root of 2
 ///    etc etc
@@ -133,10 +132,10 @@ where
     <T as FromStr>::Err: Debug,
 {
     let one: T = T::one();
-    let two : T= one + one;
-    let three: T=two + one;
-    let four: T=two + two;
-    let five: T=four + one;
+    let two: T = one + one;
+    let three: T = two + one;
+    let four: T = two + two;
+    let five: T = four + one;
 
     let phi = (one + five.sqrt()) / two;
     let phiprime = (one - five.sqrt()) / two;
@@ -175,16 +174,13 @@ where
 fn seed_points<T>(s: &str) -> impl Iterator<Item = Point<T>>
 where
     T: num_traits::Float + Copy + std::fmt::Display + std::str::FromStr + std::fmt::Debug,
- <T as FromStr>::Err: Debug
+    <T as FromStr>::Err: Debug,
 {
-    let unity: T = T::one();
-    let negity: T = -unity;
-
     let mut v: Vec<Vec<T>> = Vec::new();
     for n in s.replace(" ", "").split(",") {
         match n.chars().nth(0).unwrap() {
             '±' => {
-                let f:T = floatify(n.split("±").nth(1).unwrap());
+                let f: T = floatify(n.split("±").nth(1).unwrap());
                 v.push(vec![f, -f]);
             }
             _ => v.push(vec![floatify(n)]),
@@ -215,108 +211,76 @@ fn test_seed_points() {
     );
 }
 
+
+/*
+struct Rotations<T, I> {
+    inner: I,
+    last_point: Option<Point<T>>,
+    start_count: u8,
+    count: u8,
+}
+
+impl<I, R, T> Iterator for Rotations<I, T>
+where
+    I: Iterator<Item = R>,
+    R: RotationsValue<T>,
+{
+    type Item = Point<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        println!("next. sc{} c{}", self.start_count, self.count);
+        if self.count == self.start_count {
+            println!("m1 next. sc{} c{}", self.start_count, self.count);
+            self.count -= 1;
+            self.last_point = self.inner.next().map(|x| x.rotations_value());
+        } else {
+            self.count -= 1;
+            let p = self.last_point.unwrap();
+            if self.count == 0 {
+                self.count = self.start_count;
+            }
+            self.last_point = Some(Point::new(p.z, p.x, p.y))
+        }
+        self.last_point
+    }
+}
+*/
+
+
+#[cfg(test)]
+#[test]
+fn test_rotations() {
+    itertools::assert_equal(
+        vec![Point::new(1., 2., 3.)].iter().rotations(3),
+        vec![
+            Point::new(1., 2., 3.),
+            Point::new(3., 1., 2.),
+            Point::new(2., 3., 1.),
+        ]
+        .into_iter(),
+    );
+    itertools::assert_equal(
+        vec![Point::new(1., 2., 3.)].iter().rotations(2),
+        vec![Point::new(1., 2., 3.), Point::new(3., 1., 2.)].into_iter(),
+    );
+    itertools::assert_equal(
+        vec![Point::new(1., 2., 3.), Point::new(1., 2., -3.)]
+            .iter()
+            .rotations(3),
+        vec![
+            Point::new(1., 2., 3.),
+            Point::new(3., 1., 2.),
+            Point::new(2., 3., 1.),
+            Point::new(1., 2., -3.),
+            Point::new(-3., 1., 2.),
+            Point::new(2., -3., 1.),
+        ]
+        .into_iter(),
+    );
+}
+
 #[cfg(feature = "not_used")]
 mod unused {
-    // make rotations(n) iterator adapter
-    trait RotationsValue {
-        fn rotations_value(self) -> Point;
-    }
-    impl RotationsValue for Point {
-        fn rotations_value(self) -> Point {
-            self
-        }
-    }
-
-    impl RotationsValue for &Point {
-        fn rotations_value(self) -> Point {
-            *self
-        }
-    }
-
-    struct Rotations<I> {
-        inner: I,
-        last_point: Option<Point>,
-        start_count: u8,
-        count: u8,
-    }
-
-    impl<I, T> Iterator for Rotations<I>
-    where
-        I: Iterator<Item = T>,
-        T: RotationsValue,
-    {
-        type Item = Point;
-
-        fn next(&mut self) -> Option<Self::Item> {
-            println!("next. sc{} c{}", self.start_count, self.count);
-            if self.count == self.start_count {
-                println!("m1 next. sc{} c{}", self.start_count, self.count);
-                self.count -= 1;
-                self.last_point = self.inner.next().map(|x| x.rotations_value());
-            } else {
-                self.count -= 1;
-                let p = self.last_point.unwrap();
-                if self.count == 0 {
-                    self.count = self.start_count;
-                }
-                self.last_point = Some(Point::new(p.z, p.x, p.y))
-            }
-            self.last_point
-        }
-    }
-
-    trait RotationsAdapter: Iterator {
-        fn rotations(self, count: u8) -> Rotations<Self>
-        where
-            Self: Sized,
-        {
-            Rotations {
-                inner: self,
-                last_point: None,
-                start_count: count,
-                count,
-            }
-        }
-    }
-
-    impl<I, T> RotationsAdapter for I
-    where
-        I: Iterator<Item = T>,
-        T: RotationsValue,
-    {
-    }
-
-    #[cfg(test)]
-    #[test]
-    fn test_rotations() {
-        itertools::assert_equal(
-            vec![Point::new(1., 2., 3.)].iter().rotations(3),
-            vec![
-                Point::new(1., 2., 3.),
-                Point::new(3., 1., 2.),
-                Point::new(2., 3., 1.),
-            ]
-            .into_iter(),
-        );
-        itertools::assert_equal(
-            vec![Point::new(1., 2., 3.)].iter().rotations(2),
-            vec![Point::new(1., 2., 3.), Point::new(3., 1., 2.)].into_iter(),
-        );
-        itertools::assert_equal(
-            vec![Point::new(1., 2., 3.), Point::new(1., 2., -3.)]
-                .iter()
-                .rotations(3),
-            vec![
-                Point::new(1., 2., 3.),
-                Point::new(3., 1., 2.),
-                Point::new(2., 3., 1.),
-                Point::new(1., 2., -3.),
-                Point::new(-3., 1., 2.),
-                Point::new(2., -3., 1.),
-            ]
-            .into_iter(),
-        );
-    }
 
     // use CHull to generate a convex hull of the input points.
     // this can be used to help build the Johnson Solids.
