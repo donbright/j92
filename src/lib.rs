@@ -103,7 +103,7 @@ use std::str::FromStr;
 use itertools::iproduct;
 
 #[derive(Clone, Copy, Debug)]
-struct Point<T> {
+pub struct Point<T> {
     x: T,
     y: T,
     z: T,
@@ -128,7 +128,7 @@ impl<T: PartialEq> PartialEq for Point<T> {
 ///    Φ⁻¹ inverse golden ratio
 ///    √2 square root of 2
 ///    etc etc
-fn floatify<T>(s: &str) -> T
+pub fn floatify<T>(s: &str) -> T
 where
     T: num_traits::Float + FromStr + std::fmt::Debug + std::fmt::Display,
     <T as FromStr>::Err: Debug,
@@ -168,12 +168,18 @@ where
     s.parse::<T>().unwrap()
 }
 
-// given a string like = "±2,0,0" expand the plusminus and create
-// vectors of floating point, [+2.,0.,0.][-2.,2.,0.]
-// for "±2,0,±1" generate [-2,0,1][2,0,1][-2,0,-1][2,0,-1], etc.
-// the numbers after ± are processed by floatify() so it can
-// understand Φ as the golden ratio, and other symbols.
-fn seed_points<T>(s: &str) -> impl Iterator<Item = Point<T>>
+/// given a string like = "±2,0,0" expand the plusminus and create
+/// vectors of floating point, [+2.,0.,0.][-2.,2.,0.]
+/// for "±2,0,±1" generate [-2,0,1][2,0,1][-2,0,-1][2,0,-1], etc.
+/// the numbers after ± are processed by floatify() so it can
+/// understand Φ as the golden ratio, and other symbols.
+///
+/// ```
+/// assert!( j92::seed_points::<f32>("0,0,±1").collect::<Vec<_>>()==
+///        vec![j92::Point::new(0., 0., 1.), j92::Point::new(0., 0., -1.)] );
+/// ```
+///
+pub fn seed_points<T>(s: &str) -> impl Iterator<Item = Point<T>>
 where
     T: num_traits::Float + Copy + std::fmt::Display + std::str::FromStr + std::fmt::Debug,
     <T as FromStr>::Err: Debug,
@@ -197,10 +203,6 @@ fn test_seed_points() {
     for p in seed_points::<f32>("0,0,±1") {
         println!("{:?}", p);
     }
-    itertools::assert_equal(
-        seed_points::<f32>("0,0,±1"),
-        vec![Point::new(0., 0., 1.), Point::new(0., 0., -1.)],
-    );
 
     itertools::assert_equal(
         seed_points("±2,0,±1"),
@@ -212,7 +214,6 @@ fn test_seed_points() {
         ],
     );
 }
-
 
 #[cfg(feature = "not_used")]
 mod unused {

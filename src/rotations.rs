@@ -1,7 +1,6 @@
+use crate::Point;
 use num_traits::Float;
 use std::iter::Iterator;
-use crate::Point;
-
 
 /// Implement the Rotations iterator adapter
 struct Rotations<'a, I, T>
@@ -11,27 +10,28 @@ where
 {
     iter: I,
     last_point: Option<Point<T>>,
-    start_count: u8,
-    count: u8,
+    start_count: i8,
+    count: i8,
 }
 
 impl<'a, I, T> Iterator for Rotations<'a, I, T>
 where
     I: Iterator<Item = &'a Point<T>>,
-    T: 'a + Float,
+    T: 'a + Float + std::fmt::Debug,
 {
     type Item = Point<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.count -= 1;
-        if self.count ==  self.start_count-1 {
+        self.count = self.count - 1;
+        if self.count == self.start_count - 1 {
+            println!("{:?}", self.last_point);
             self.last_point = self.iter.next().copied();
         } else {
             let p = self.last_point.unwrap();
-            self.last_point = Some(Point::new(p.z,p.x,p.y))
+            self.last_point = Some(Point::new(p.z, p.x, p.y));
         };
         if self.count == 0 {
-           self.count = self.start_count;
+            self.count = self.start_count;
         }
         self.last_point
     }
@@ -42,7 +42,7 @@ trait RotationsExt<'a, T>: Iterator<Item = &'a Point<T>> + Sized
 where
     T: 'a + Float,
 {
-    fn rotations(self, count: u8) -> Rotations<'a, Self, T> {
+    fn rotations(self, count: i8) -> Rotations<'a, Self, T> {
         Rotations {
             iter: self,
             start_count: count,
@@ -52,11 +52,12 @@ where
     }
 }
 
-impl<'a, I, T> RotationsExt<'a, T> for I 
-where 
-    I: Iterator<Item = &'a Point<T>>, 
-    T: 'a + Float 
-{}
+impl<'a, I, T> RotationsExt<'a, T> for I
+where
+    I: Iterator<Item = &'a Point<T>>,
+    T: 'a + Float,
+{
+}
 
 #[cfg(test)]
 #[test]
@@ -89,4 +90,3 @@ fn test_rotations() {
         .into_iter(),
     );
 }
-
