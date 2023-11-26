@@ -2,17 +2,17 @@
 
 This computer code, in the Rust language, provides data on the 
 ninety-two Johnson Solids - Convex Polyhedra that have Regular Polygons 
-as Faces. It can output vertices in various precisions and formats.
-
+as Faces. It can output vertex + edge data in various precisions and 
+formats.
 
 # Usage
 
 
 ```
 fn main() {
-    println!("{}",j92::PentgaonalCupola().vertices().count);
-    println!("{}",j92::PentgaonalCupola().faces().count);
-    for v in j92::SquareCupola().vertices() {
+    println!("{}",j92<f32>::PentgaonalCupola().vertices().count);
+    println!("{}",j92<f32>::PentgaonalCupola().faces().count);
+    for v in j92<f32>::SquareCupola().vertices() {
         println!("{}",v);
     }
 }

@@ -102,6 +102,11 @@ use std::str::FromStr;
 // to help us deal with the +/- notation
 use itertools::iproduct;
 
+// support f32 and f64, and also f16 with the half crate
+use num_traits::Float;
+use half::f16;
+
+
 #[derive(Clone, Copy, Debug)]
 pub struct Point<T> {
     x: T,
@@ -113,6 +118,24 @@ impl<T> Point<T> {
     pub fn new(x: T, y: T, z: T) -> Self {
         Point { x, y, z }
     }
+}
+impl<T: FromStr> Point<T> {
+    pub fn new_from_str(x: &str, y: &str, z: &str) -> Self
+    where
+        T: std::fmt::Display,
+        <T as FromStr>::Err: Debug,
+    {
+        Point {
+            x: T::from_str(x).unwrap(),
+            y: T::from_str(y).unwrap(),
+            z: T::from_str(z).unwrap(),
+        }
+    }
+}
+
+struct Edge<T> {
+    a: Point<T>,
+    b: Point<T>,
 }
 
 impl<T: PartialEq> PartialEq for Point<T> {
@@ -168,51 +191,109 @@ where
     s.parse::<T>().unwrap()
 }
 
+
 /// given a string like = "±2,0,0" expand the plusminus and create
 /// vectors of floating point, [+2.,0.,0.][-2.,2.,0.]
 /// for "±2,0,±1" generate [-2,0,1][2,0,1][-2,0,-1][2,0,-1], etc.
 /// the numbers after ± are processed by floatify() so it can
 /// understand Φ as the golden ratio, and other symbols.
 ///
+/// example:
 /// ```
 /// assert!( j92::seed_points::<f32>("0,0,±1").collect::<Vec<_>>()==
 ///        vec![j92::Point::new(0., 0., 1.), j92::Point::new(0., 0., -1.)] );
 /// ```
 ///
-pub fn seed_points<T>(s: &str) -> impl Iterator<Item = Point<T>>
-where
-    T: num_traits::Float + Copy + std::fmt::Display + std::str::FromStr + std::fmt::Debug,
-    <T as FromStr>::Err: Debug,
-{
-    let mut v: Vec<Vec<T>> = Vec::new();
+pub fn seed_points(s: &str) -> impl Iterator<Item = Point<String>> {
+    let mut v: Vec<Vec<String>> = Vec::new();
     for n in s.replace(" ", "").split(",") {
         match n.chars().nth(0).unwrap() {
             '±' => {
-                let f: T = floatify(n.split("±").nth(1).unwrap());
-                v.push(vec![f, -f]);
+                let f: String = n.split("±").nth(1).unwrap().to_string();
+                v.push(vec![f.clone(), format!("-{}", f)]);
             }
-            _ => v.push(vec![floatify(n)]),
+            _ => v.push(vec![n.to_string()]),
         }
     }
     iproduct!(v[0].clone(), v[1].clone(), v[2].clone()).map(|v| Point::new(v.0, v.1, v.2))
 }
 
+trait ToF16 {
+    fn to_f16(&self) -> Box<dyn Iterator<Item = Point<f16>> + '_>;
+}
+
+impl<'a> ToF16 for &'a [Point<String>] {
+    fn to_f16(&self) -> Box<dyn Iterator<Item = Point<f16>> + '_> {
+        Box::new(self.iter().map(|point| {
+            Point::new(
+                floatify::<f16>(&point.x),
+                floatify::<f16>(&point.y),
+                floatify::<f16>(&point.z),
+            )
+        }))
+    }
+}
+
+
+trait ToFloat<'a, T>
+where
+    T: Float,
+{
+    fn to_float(self) -> Box<dyn Iterator<Item = Point<T>> + 'a>;
+}
+
+impl<'a, I, T> ToFloat<'a, T> for I
+where
+    I: Iterator<Item = Point<String>> + 'a,
+    T: Float + FromStr,
+    <T as FromStr>::Err: std::fmt::Debug,
+{
+    fn to_float(self) -> Box<dyn Iterator<Item = Point<T>> + 'a> {
+        Box::new(self.map(|point| {
+            Point::new(
+                T::from_str(&point.x).unwrap_or_else(|_| T::zero()),
+                T::from_str(&point.y).unwrap_or_else(|_| T::zero()),
+                T::from_str(&point.z).unwrap_or_else(|_| T::zero()),
+            )
+        }))
+    }
+}
+
 #[cfg(test)]
 #[test]
 fn test_seed_points() {
-    for p in seed_points::<f32>("0,0,±1") {
-        println!("{:?}", p);
-    }
-
     itertools::assert_equal(
         seed_points("±2,0,±1"),
         vec![
-            Point::new(2., 0., 1.),
-            Point::new(2., 0., -1.),
-            Point::new(-2., 0., 1.),
-            Point::new(-2., 0., -1.),
+            Point::new_from_str("2", "0", "1"),
+            Point::new_from_str("2", "0", "-1"),
+            Point::new_from_str("-2", "0", "1"),
+            Point::new_from_str("-2", "0", "-1"),
         ],
     );
+
+    itertools::assert_equal(
+        seed_points("±2,0,±1").to_float(),
+        vec![
+            Point::<f32>::new(2., 0., 1.),
+            Point::<f32>::new(2., 0., -1.),
+            Point::<f32>::new(-2., 0., 1.),
+            Point::<f32>::new(-2., 0., -1.),
+        ],
+    );
+
+    // f16 doesn't allow floating point literals but we can build from string
+    itertools::assert_equal(
+        seed_points("±2,0,±1").to_float(),
+        vec![
+            Point::<f16>::new_from_str("2", "0", "1"),
+            Point::<f16>::new_from_str("2", "0", "-1"),
+            Point::<f16>::new_from_str("-2", "0", "1"),
+            Point::<f16>::new_from_str("-2", "0", "-1"),
+        ],
+    );
+
+
 }
 
 #[cfg(feature = "not_used")]
