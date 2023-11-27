@@ -6,7 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+derive_more = "0.99.17"
 half = { version="2.3.1", features = ["num-traits"] }
 itertools = "0.12.0"
 kiss3d = "0.35.0"
 num-traits = "0.2.17"
+rug = "1.22.0"

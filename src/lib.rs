@@ -102,9 +102,14 @@ use std::str::FromStr;
 // to help us deal with the +/- notation
 use itertools::iproduct;
 
-// support f32 and f64, and also f16 with the half crate
-use num_traits::Float;
-use half::f16;
+// support f32 and f64
+use num_traits;
+// and also f16
+use half;
+// and arbitrary precision
+use rug;
+use rug::ops::CompleteRound;
+use rug::Complete;
 
 
 #[derive(Clone, Copy, Debug)]
@@ -129,6 +134,26 @@ impl<T: FromStr> Point<T> {
             x: T::from_str(x).unwrap(),
             y: T::from_str(y).unwrap(),
             z: T::from_str(z).unwrap(),
+        }
+    }
+}
+impl Point<rug::Float> {
+    pub fn new_rugfloat_from_str(x: &str, y: &str, z: &str, precision: &u32) -> Self
+    {
+        Point {
+            x: rug::Float::parse(x).unwrap().complete(*precision),
+            y: rug::Float::parse(y).unwrap().complete(*precision),
+            z: rug::Float::parse(z).unwrap().complete(*precision),
+        }
+    }
+}
+impl Point<rug::Rational> {
+    pub fn new_rugrat_from_str(x: &str, y: &str, z: &str) -> Self
+    {
+        Point {
+            x: rug::Rational::parse(x).unwrap().complete(),
+            y: rug::Rational::parse(y).unwrap().complete(),
+            z: rug::Rational::parse(z).unwrap().complete(),
         }
     }
 }
@@ -218,46 +243,73 @@ pub fn seed_points(s: &str) -> impl Iterator<Item = Point<String>> {
     iproduct!(v[0].clone(), v[1].clone(), v[2].clone()).map(|v| Point::new(v.0, v.1, v.2))
 }
 
-trait ToF16 {
-    fn to_f16(&self) -> Box<dyn Iterator<Item = Point<f16>> + '_>;
-}
-
-impl<'a> ToF16 for &'a [Point<String>] {
-    fn to_f16(&self) -> Box<dyn Iterator<Item = Point<f16>> + '_> {
-        Box::new(self.iter().map(|point| {
-            Point::new(
-                floatify::<f16>(&point.x),
-                floatify::<f16>(&point.y),
-                floatify::<f16>(&point.z),
-            )
-        }))
-    }
-}
-
-
 trait ToFloat<'a, T>
 where
-    T: Float,
+    T: num_traits::Float,
 {
-    fn to_float(self) -> Box<dyn Iterator<Item = Point<T>> + 'a>;
+    fn to_ntfloat(self) -> Box<dyn Iterator<Item = Point<T>> + 'a>;
 }
 
 impl<'a, I, T> ToFloat<'a, T> for I
 where
     I: Iterator<Item = Point<String>> + 'a,
-    T: Float + FromStr,
+    T:num_traits::Float + FromStr,
     <T as FromStr>::Err: std::fmt::Debug,
 {
-    fn to_float(self) -> Box<dyn Iterator<Item = Point<T>> + 'a> {
+    fn to_ntfloat(self) -> Box<dyn Iterator<Item = Point<T>> + 'a> {
         Box::new(self.map(|point| {
             Point::new(
-                T::from_str(&point.x).unwrap_or_else(|_| T::zero()),
-                T::from_str(&point.y).unwrap_or_else(|_| T::zero()),
-                T::from_str(&point.z).unwrap_or_else(|_| T::zero()),
+                T::from_str(&point.x).unwrap(),
+                T::from_str(&point.y).unwrap(),
+                T::from_str(&point.z).unwrap(),
             )
         }))
     }
 }
+
+
+
+trait ToRugFloat<'a>
+{
+    fn to_rugfloat(self,precision:u32) -> Box<dyn Iterator<Item = Point<rug::Float>> + 'a>;
+}
+
+impl<'a, I> ToRugFloat<'a> for I
+where
+    I: Iterator<Item = Point<String>> + 'a,
+{
+    fn to_rugfloat(self,precision:u32) -> Box<dyn Iterator<Item = Point<rug::Float>> + 'a> {
+        Box::new(self.map(move |point| {
+            Point::<rug::Float>::new(
+                rug::Float::parse(&point.x).unwrap().complete(precision),
+                rug::Float::parse(&point.y).unwrap().complete(precision),
+                rug::Float::parse(&point.z).unwrap().complete(precision),
+            )
+        }))
+    }
+}
+
+
+trait ToRugRational<'a>
+{
+    fn to_rugrat(self) -> Box<dyn Iterator<Item = Point<rug::Rational>> + 'a>;
+}
+
+impl<'a, I> ToRugRational<'a> for I
+where
+    I: Iterator<Item = Point<String>> + 'a,
+{
+    fn to_rugrat(self) -> Box<dyn Iterator<Item = Point<rug::Rational>> + 'a> {
+        Box::new(self.map(move |point| {
+            Point::<rug::Rational>::new(
+                rug::Rational::parse(&point.x).unwrap().complete(),
+                rug::Rational::parse(&point.y).unwrap().complete(),
+                rug::Rational::parse(&point.z).unwrap().complete(),
+            )
+        }))
+    }
+}
+
 
 #[cfg(test)]
 #[test]
@@ -273,7 +325,7 @@ fn test_seed_points() {
     );
 
     itertools::assert_equal(
-        seed_points("±2,0,±1").to_float(),
+        seed_points("±2,0,±1").to_ntfloat(),
         vec![
             Point::<f32>::new(2., 0., 1.),
             Point::<f32>::new(2., 0., -1.),
@@ -282,18 +334,48 @@ fn test_seed_points() {
         ],
     );
 
-    // f16 doesn't allow floating point literals but we can build from string
     itertools::assert_equal(
-        seed_points("±2,0,±1").to_float(),
+        seed_points("±2,0,±1").to_ntfloat(),
         vec![
-            Point::<f16>::new_from_str("2", "0", "1"),
-            Point::<f16>::new_from_str("2", "0", "-1"),
-            Point::<f16>::new_from_str("-2", "0", "1"),
-            Point::<f16>::new_from_str("-2", "0", "-1"),
+            Point::<f64>::new(2., 0., 1.),
+            Point::<f64>::new(2., 0., -1.),
+            Point::<f64>::new(-2., 0., 1.),
+            Point::<f64>::new(-2., 0., -1.),
         ],
     );
 
+    // f16 doesn't allow floating point literals but we can build from string
+    itertools::assert_equal(
+        seed_points("±2,0,±1").to_ntfloat(),
+        vec![
+            Point::<half::f16>::new_from_str("2", "0", "1"),
+            Point::<half::f16>::new_from_str("2", "0", "-1"),
+            Point::<half::f16>::new_from_str("-2", "0", "1"),
+            Point::<half::f16>::new_from_str("-2", "0", "-1"),
+        ],
+    );
 
+    // rug Float allows arbitrary precision floating point
+    itertools::assert_equal(
+        seed_points("±2,0,±1").to_rugfloat(35),
+        vec![
+            Point::new_rugfloat_from_str("2", "0", "1", &35),
+            Point::new_rugfloat_from_str("2", "0", "-1", &35),
+            Point::new_rugfloat_from_str("-2", "0", "1", &35),
+            Point::new_rugfloat_from_str("-2", "0", "-1", &35),
+        ],
+    );
+
+    // rug Rational allows arbitrary precision Rational numbers
+    itertools::assert_equal(
+        seed_points("±2,0,±1").to_rugrat(),
+        vec![
+            Point::new_rugrat_from_str("2", "0", "1"),
+            Point::new_rugrat_from_str("2", "0", "-1"),
+            Point::new_rugrat_from_str("-2", "0", "1"),
+            Point::new_rugrat_from_str("-2", "0", "-1"),
+        ],
+    );
 }
 
 #[cfg(feature = "not_used")]
