@@ -112,13 +112,16 @@ trait PseudoField<T> {
     fn value(&self) -> T;
     fn zero() -> T;
     fn one() -> T;
-    
 }
 
 trait Point<PseudoField> {
     fn coordinates(&self) -> Vec<PseudoField>;
 }
 
+trait Edge {
+	fn point1() -> Point<PseudoField>,
+		fn point2() -> Point<PseudoField>
+}
 
 fn distance<T: Clone + PseudoField<T>>(p1: &dyn Point<T>, p2: &dyn Point<T>) -> T {
     let coords1 = p1.coordinates();
@@ -130,7 +133,6 @@ fn distance<T: Clone + PseudoField<T>>(p1: &dyn Point<T>, p2: &dyn Point<T>) -> 
         let squared = diff.mul(diff.clone());
         sum = sum.add(squared);
     }
-
     sum.sqrt()
 }
 
