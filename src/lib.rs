@@ -1,5 +1,7 @@
 
 mod f64;
+mod f32;
+mod f16;
 
 pub enum JohnsonSolid {
     SsquarePyramid,
@@ -99,9 +101,12 @@ pub enum JohnsonSolid {
 trait PseudoField<T> {
     fn add(&self, other: T) -> T;
     fn sub(&self, other: T) -> T;
-    fn powi(&self, exponent: i32) -> T;
+    fn mul(&self, other: T) -> T;
     fn sqrt(&self) -> T;
     fn value(&self) -> T;
+    fn zero() -> T;
+    fn one() -> T;
+    
 }
 
 trait Point<PseudoField> {
@@ -112,12 +117,11 @@ trait Point<PseudoField> {
 fn distance<T: Copy + PseudoField<T>>(p1: &dyn Point<T>, p2: &dyn Point<T>) -> T {
     let coords1 = p1.coordinates();
     let coords2 = p2.coordinates();
-
-    let mut sum = coords1[0].sub(coords2[0]).powi(2);
-
-    for i in 1..coords1.len() {
+    
+    let mut sum = T::zero();
+    for i in 0..coords1.len() {
         let diff = coords1[i].sub(coords2[i]);
-        let squared = diff.powi(2);
+        let squared = diff.mul(diff);
         sum = sum.add(squared);
     }
 
