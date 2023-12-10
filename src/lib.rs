@@ -118,9 +118,18 @@ trait Point<T> {
     fn coordinates(&self) -> Box<dyn Iterator<Item = T>>;
 }
 
-//trait Edge<T> {
-//	fn points(&self) -> Box<dyn Iterator<item = T>>;
-//}
+trait Edge<T,R> where T: Point<R> {
+	fn points(&self) -> Box<dyn Iterator<Item = T>>;
+}
+
+trait Face<T,R> where T: Edge<T,R> + Point<R> {
+	fn edges(&self) -> Box<dyn Iterator<Item = T>>;    
+}
+
+trait Polyhedron<T,R> where T: Face<T,R> + Edge<T,R> + Point<R> {
+	fn faces(&self) -> Box<dyn Iterator<Item = T>>;
+}
+
 
 fn distance<T: Clone + PseudoField<T>>(
 p1: &dyn Point<T>, 

@@ -1,5 +1,11 @@
 # J92
 
+**********
+
+In progress, not usable right now 
+
+*********
+
 This computer code, in the Rust language, provides data on the 
 ninety-two Johnson Solids - Convex Three Dimensional Polyhedra that have 
 Regular Polygons as Faces. It can output vertex + edge data in various 
@@ -57,7 +63,7 @@ is why it has it's own Point type and other stuff.
 
 The dependency count for examples can be high. 
 
-# Design of number type
+# Design of Geometry objects (Point, Edge, Face, Polyhedron)
 
 The code is based on a special way of imagining the numbers that are the
 coordinates of a Point in Space. 
@@ -81,22 +87,49 @@ case we are focusing on the actual number type used to describe each coordinate.
 And in this project, j92, the Point is designed to use a very diverse set
 of number types.
 
-How is this accomplished? 
+How is this accomplished? Basically, its like this;
 
-Instead of f64, Point has coordinates which are of the type PseudoField. 
+      Point: x: PseudoField, y: PseudoField
 
-What is a PseudoField? The name comes from the mathematical concept of
-a Field, which is a set of numbers which have addition and multiplication
-in the standard form, in other words, you can add something to any number
-in the set and get 0, and you can multiply any number by something to get 1.
+However instead of Point being a Struct, its actually a Trait, in other
+languages this is called an Interface. It defines the behavior of a Point
+without specifying how the data inside the Point is stored. You access
+the values x and y via calling methods (functions) on the Point rather than
+reading a memory location. 
+
+And instead of int or f64, the coordinates are PseudoField, which is another
+Trait which defines how objects which are Numbers will behave. Rather than
+specifying how their data is stored in memory.
+
+Is this slow? Yes. But for j92 speed is considered irrelevant, we are going
+for an extremely flexibly code base that will allow various forms of output.
+We don't care about speed in this situation. 
+
+# PseudoField number type
+
+What is a PseudoField? The name comes from the mathematical concept of a 
+Field, which is a set of numbers and the operations on them, such as 
+addition and multplication. In the Field of normal arithmetic we learn 
+in grade school, there is an additive inverse and a multiplicative 
+inverse. In other words, you can add something to any number in the set 
+and get 0, and you can multiply any number by something to get 1.
 
 Now why would I say "Pseudo"? Because IEEE floating point numbers do not 
-form a field. If you add an f32 to another f32, you don't necessarily 
+form a Field. If you add an f32 to another f32, you don't necessarily 
 get back a number that is within the f32 set of numbers. Same with 
-multiplication, especially multiplicative inverses.
+multiplication, especially multiplicative inverses. And associativity
+and commutativity. 
 
-But I certainly wouldn't want to throw out IEEE floating point numbers
-entirely, so hence the name PseudoField
+And in computer math, often we use int64 or floatf64 imagining that they
+will never need to deal with overflow/underflow, but in fact they do, so
+these are not Fields either.
+
+But I certainly wouldn't want to throw out IEEE floating point numbers 
+or integers entirely, so hence the name PseudoField. 
+
+# What about a Finite Field with Field Extension of the Golden Ratio or...
+
+That is beyond the scope of this project.
 
 # The end
 
