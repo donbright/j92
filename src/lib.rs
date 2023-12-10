@@ -1,7 +1,13 @@
 
+// the Module include code, here, is the only place any concrete types should exist in the entire
+// libs.rs code. If you used some concrete type in lib.rs , you know you done messed up and
+// violated the foundational principles of the j92 project.
 mod f64;
 mod f32;
 mod f16;
+mod rugfloat;
+mod rugrat;
+// end of module include code
 
 pub enum JohnsonSolid {
     SsquarePyramid,
@@ -114,14 +120,14 @@ trait Point<PseudoField> {
 }
 
 
-fn distance<T: Copy + PseudoField<T>>(p1: &dyn Point<T>, p2: &dyn Point<T>) -> T {
+fn distance<T: Clone + PseudoField<T>>(p1: &dyn Point<T>, p2: &dyn Point<T>) -> T {
     let coords1 = p1.coordinates();
     let coords2 = p2.coordinates();
     
     let mut sum = T::zero();
     for i in 0..coords1.len() {
-        let diff = coords1[i].sub(coords2[i]);
-        let squared = diff.mul(diff);
+        let diff = coords1[i].sub(coords2[i].clone());
+        let squared = diff.mul(diff.clone());
         sum = sum.add(squared);
     }
 
