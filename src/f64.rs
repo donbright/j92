@@ -45,10 +45,12 @@ struct PointF64 {
 }
 
 impl Point<FieldF64> for PointF64 {
-    fn coordinates(&self) -> Vec<FieldF64> {
-        vec![self.x, self.y]
+
+    fn coordinates(&self) -> Box<dyn Iterator<Item = FieldF64>> {
+        Box::new(vec![self.x.clone(), self.y.clone()].into_iter())
     }
 }
+
 
 #[cfg(test)]
 mod tests {

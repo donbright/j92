@@ -3,10 +3,10 @@
 // libs.rs code. If you used some concrete type in lib.rs , you know you done messed up and
 // violated the foundational principles of the j92 project.
 mod f64;
-mod f32;
-mod f16;
-mod rugfloat;
-mod rugrat;
+//mod f32;
+//mod f16;
+//mod rugfloat;
+//mod rugrat;
 // end of module include code
 
 pub enum JohnsonSolid {
@@ -114,26 +114,25 @@ trait PseudoField<T> {
     fn one() -> T;
 }
 
-trait Point<PseudoField> {
-    fn coordinates(&self) -> Vec<PseudoField>;
+trait Point<T> {
+    fn coordinates(&self) -> Box<dyn Iterator<Item = T>>;
 }
 
-trait Edge {
-	fn point1() -> Point<PseudoField>,
-		fn point2() -> Point<PseudoField>
-}
+//trait Edge<T> {
+//	fn points(&self) -> Box<dyn Iterator<item = T>>;
+//}
 
-fn distance<T: Clone + PseudoField<T>>(p1: &dyn Point<T>, p2: &dyn Point<T>) -> T {
-    let coords1 = p1.coordinates();
-    let coords2 = p2.coordinates();
-    
-    let mut sum = T::zero();
-    for i in 0..coords1.len() {
-        let diff = coords1[i].sub(coords2[i].clone());
-        let squared = diff.mul(diff.clone());
-        sum = sum.add(squared);
-    }
-    sum.sqrt()
+fn distance<T: Clone + PseudoField<T>>(
+p1: &dyn Point<T>, 
+p2: &dyn Point<T>, 
+) -> T {
+
+	  p1.coordinates()
+        .zip(p2.coordinates())
+        .map(|(coord1, coord2)| coord1.sub(coord2))
+        .map(|x| x.mul(x.clone()))
+        .fold(T::zero(), |acc, val| acc.add(val))
+        .sqrt()
 }
 
 
