@@ -141,6 +141,17 @@ where
 }
 
 
+trait Polyhedron<M, Z, X, T, U>
+where
+    M: Face<Z,X,T,U>,
+    Z: Edge<X, T, U>,
+    X: Point<T, U>,
+    U: PseudoField<T>,
+{
+    fn faces(&self) -> Box<dyn Iterator<Item = M>>;
+}
+
+
 /*
 trait Face<T,R,S> where T: Edge<T,R> , R: Point<S> {
     fn edges(&self) -> Box<dyn Iterator<Item = T>>;

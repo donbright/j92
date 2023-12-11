@@ -3,6 +3,7 @@ use crate::PseudoField;
 use crate::Point;
 use crate::Edge;
 use crate::Face;
+use crate::Polyhedron;
 
 #[derive(Clone, Copy, Debug)]
 struct FieldF64(f64);
@@ -157,7 +158,68 @@ fn test_FaceF64() {
 
 
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+
+
+
+#[derive(Debug)]
+struct PolyhedronF64<T> {
+    faces: Vec<T>,
 }
+
+impl<M, Z, X, T, U> Polyhedron<M, Z, X, T, U> for PolyhedronF64<M> 
+where
+    M: Face<Z,X,T,U> +  'static + Copy,
+    Z: Edge<X,T,U> + 'static + Copy,
+    X: Point<T, U> + 'static + Copy,
+    U: PseudoField<T>,
+ {
+    fn faces(&self) -> Box<dyn Iterator<Item = M>> {
+	Box::new(self.faces.clone().into_iter())
+    }
+}
+
+
+/*
+#[test]
+fn test_PolyhedronF64() {
+    let point1 = PointF64 {
+        x: FieldF64(4.0),
+        y: FieldF64(0.0),
+    };
+    let point2 = PointF64 {
+        x: FieldF64(4.0),
+        y: FieldF64(3.0),
+    };
+    let point3 = PointF64 {
+        x: FieldF64(0.0),
+        y: FieldF64(0.0),
+    };
+    let point4 = PointF64 {
+        x: FieldF64(0.0),
+        y: FieldF64(0.0),
+    };
+
+    let e1 = EdgeF64 {
+        start: point1,
+        end: point2,
+    };
+    let e2 = EdgeF64 {
+        start: point2,
+        end: point3,
+    };
+    let e3 = EdgeF64 {
+        start: point3,
+        end: point1,
+    };
+    let f1 = FaceF64 { edges: vec![e1, e2, e3]} ;
+    let f2 = FaceF64 { edges: vec![e1, e2, e3]} ;
+    let f3 = FaceF64 { edges: vec![e1, e2, e3]} ;
+    let f4 = FaceF64 { edges: vec![e1, e2, e3]} ;
+    let p = Polyhedron { faces: vec![ f1,f2,f3,f4 ] };
+    println!("{:?}",p);
+}
+*/
+
+
+
+
