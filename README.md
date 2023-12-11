@@ -48,22 +48,7 @@ is allowed by the fact we are not really calculating much when we
 build the vertex lists, we are building the Polyhedron literally from
 string symbols. 
 
-# Design Philosophy
-
-This only does the ninety-two Johnson Solids, no more and no less. 
-None will ever be added or taken away.
-
-The library is designed so it can spit out code for various uses,
-for example if you want just the raw ASCII decimal numbers for an OBJ
-file, you can get that. If you want high precision floating point numbers
-for coordinates you can get that too.
-
-The dependency count should be somewhat low for the library itself. That
-is why it has it's own Point type and other stuff.
-
-The dependency count for examples can be high. 
-
-# Design of Geometry objects (Point, Edge, Face, Polyhedron)
+# Design of Geometry objects
 
 The code is based on a special way of imagining the numbers that are the
 coordinates of a Point in Space. 
@@ -105,6 +90,40 @@ Is this slow? Yes. But for j92 speed is considered irrelevant, we are going
 for an extremely flexibly code base that will allow various forms of output.
 We don't care about speed in this situation. 
 
+# Point Edge Face Polyhedron
+
+How do we build a Polyhedron? We consider a layer of building blocks.
+
+ Polyhedron is made of Faces
+ Faces are made of Edges
+ Edges are made of Points
+ Points are made of Coordinates
+ Coordinates are PseudoFields
+
+Now this is in contrast to most geometry libraries, where a Polyhedron
+is a set of Points, with a separate list of indexes into that list
+of points which describes each face or edge or whatever.
+
+Why don't we do that here? 
+
+Because we are keeping the basic design very consistent and logical
+as there are just layers of collections of simpler things. 
+So at each layer n, thing X is a collection of thing on layer n-1.
+
+Why? Because I think it's cool.
+
+Now, you can reconstruct the traditional Polyhedron representation
+of a list of points, and indexes to edges, if you want, thats totally
+doable. In fact this program does it. But it's not necessary
+
+But isn't that horrifically inefficient? Well, technically yes. 
+Spacewise it is terrible inefficient.
+
+But not exactly. Because Polyhedron, Faces, Edges, Points, and Coordinates
+are all Trait objects, you can implement their functions however you wish
+So the 'backing' of the data could be traditional index style, and you could
+make your iterators simply return info using that data structure.
+
 # PseudoField number type
 
 What is a PseudoField? The name comes from the mathematical concept of a 
@@ -130,6 +149,22 @@ or integers entirely, so hence the name PseudoField.
 # What about a Finite Field with Field Extension of the Golden Ratio or...
 
 That is beyond the scope of this project.
+
+# Design Philosophy
+
+This only does the ninety-two Johnson Solids, no more and no less. 
+None will ever be added or taken away.
+
+The library is designed so it can spit out code for various uses,
+for example if you want just the raw ASCII decimal numbers for an OBJ
+file, you can get that. If you want high precision floating point numbers
+for coordinates you can get that too.
+
+The dependency count should be somewhat low for the library itself. That
+is why it has it's own Point type and other stuff.
+
+The dependency count for examples can be high. 
+
 
 # The end
 
