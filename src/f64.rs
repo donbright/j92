@@ -2,8 +2,9 @@ use crate::distance;
 use crate::PseudoField;
 use crate::Point;
 use crate::Edge;
+use crate::Face;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct FieldF64(f64);
 
 impl PseudoField<f64> for FieldF64 {
@@ -40,7 +41,7 @@ fn test_field_f64_add() {
     assert_eq!(a.add(&b).0, 3.0);
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy,Debug)]
 struct PointF64 {
     x: FieldF64,
     y: FieldF64,
@@ -69,17 +70,18 @@ fn test_PointF64() {
     println!("Distance: {}", dist.0);
 }
 
+#[derive(Debug)]
 struct EdgeF64<T> {
     start: T,
     end: T,
 }
 
-impl<T, U, X> Edge<T, U, X> for EdgeF64<T> 
+impl<X, T, U> Edge<X, T, U> for EdgeF64<X> 
 where
-    T: Point<U, X> + 'static + Copy,
-    X: PseudoField<U>,
+    X: Point<T, U> + 'static + Copy,
+    U: PseudoField<T>,
  {
-    fn points(&self) -> Box<dyn Iterator<Item = T>> {
+    fn points(&self) -> Box<dyn Iterator<Item = X>> {
         Box::new(vec![self.start, self.end].into_iter())
     }
 }
@@ -100,20 +102,27 @@ fn test_EdgeF64() {
         start: point1,
         end: point2,
     };
+    println!("{:?}",distance(&e1.start, &e1.end));
 }
 
 
-/*
-#[derive(Clone)]
-struct FaceF64 {
-    edges: Vec<EdgeF64>,
+#[derive(Debug)]
+struct FaceF64<T> {
+    edges: Vec<T>,
 }
 
-impl Face<EdgeF64, PointF64, FieldF64> for FaceF64 {
-    fn edges(&self) -> Box<dyn Iterator<Item = EdgeF64>> {
-        self.edges.into_iter()
+impl<Z, X, T, U> Face<Z, X, T, U> for FaceF64<Z> 
+where
+    Z: Edge<X,T,U> + 'static + Copy,
+    X: Point<T, U> + 'static + Copy,
+    U: PseudoField<T>,
+ {
+    fn edges(&self) -> Box<dyn Iterator<Item = Z>> {
+	Box::new(self.edges.clone().into_iter())
     }
 }
+
+
 
 #[test]
 fn test_FaceF64() {
@@ -125,12 +134,28 @@ fn test_FaceF64() {
         x: FieldF64(4.0),
         y: FieldF64(6.0),
     };
-    let e1 = EdgeF64 {
-        p1: point1,
-        p2: point2,
+    let point3 = PointF64 {
+        x: FieldF64(0.0),
+        y: FieldF64(0.0),
     };
+
+    let e1 = EdgeF64 {
+        start: point1,
+        end: point2,
+    };
+    let e2 = EdgeF64 {
+        start: point2,
+        end: point3,
+    };
+    let e3 = EdgeF64 {
+        start: point3,
+        end: point1,
+    };
+    let f = FaceF64 { edges: vec![e1, e2, e3]} ;
+    println!("{:?}",f);
 }
-*/
+
+
 
 #[cfg(test)]
 mod tests {

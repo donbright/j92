@@ -122,13 +122,24 @@ where
     fn coordinates(&self) -> Box<dyn Iterator<Item = U>>;
 }
 
-trait Edge<T, U, X>
+trait Edge<X, T, U>
 where
-    T: Point<U, X>,
-    X: PseudoField<U>,
+    X: Point<T, U>,
+    U: PseudoField<T>,
 {
-    fn points(&self) -> Box<dyn Iterator<Item = T>>;
+    fn points(&self) -> Box<dyn Iterator<Item = X>>;
 }
+
+
+trait Face<Z, X, T, U>
+where
+    Z: Edge<X, T, U>,
+    X: Point<T, U>,
+    U: PseudoField<T>,
+{
+    fn edges(&self) -> Box<dyn Iterator<Item = Z>>;
+}
+
 
 /*
 trait Face<T,R,S> where T: Edge<T,R> , R: Point<S> {
