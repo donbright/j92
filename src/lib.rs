@@ -2,6 +2,7 @@
 // libs.rs code. If you used some concrete type in lib.rs , you know you done messed up and
 // violated the foundational principles of the j92 project.
 mod f64;
+mod iterator;
 //mod f32;
 //mod f16;
 //mod rugfloat;
@@ -9,7 +10,6 @@ mod f64;
 // end of module include code
 
 use std::rc::Rc;
-
 
 pub enum JohnsonSolid {
     SsquarePyramid,
@@ -130,7 +130,6 @@ where
     fn points(&self) -> Box<dyn Iterator<Item = X>>;
 }
 
-
 trait Face<Z, X, T, U>
 where
     Z: Edge<X, T, U>,
@@ -140,30 +139,15 @@ where
     fn edges(&self) -> Box<dyn Iterator<Item = Z>>;
 }
 
-
 trait Polyhedron<M, Z, X, T, U>
 where
-    M: Face<Z,X,T,U>,
+    M: Face<Z, X, T, U>,
     Z: Edge<X, T, U>,
     X: Point<T, U>,
     U: PseudoField<T>,
 {
     fn faces(&self) -> Box<dyn Iterator<Item = M>>;
 }
-
-
-/*
-trait Face<T,R,S> where T: Edge<T,R> , R: Point<S> {
-    fn edges(&self) -> Box<dyn Iterator<Item = T>>;
-}
-
-
-trait Polyhedron<T,R> where T: Face<T,R> + Edge<T,R> + Point<R> {
-    fn faces(&self) -> Box<dyn Iterator<Item = T>>;
-}
-*/
-
-
 
 fn distance<T, U>(p1: &dyn Point<T, U>, p2: &dyn Point<T, U>) -> U
 where
@@ -172,9 +156,7 @@ where
     p1.coordinates()
         .zip(p2.coordinates())
         .map(|(coord1, coord2)| coord1.sub(&coord2))
-        .map(|x|x.mul(&x))
+        .map(|x| x.mul(&x))
         .fold(U::zero(), |acc, val| acc.add(&val))
         .sqrt()
 }
-
-
