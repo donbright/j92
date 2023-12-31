@@ -2,7 +2,8 @@
 // libs.rs code. If you used some concrete type in lib.rs , you know you done messed up and
 // violated the foundational principles of the j92 project.
 mod f64;
-mod iterator;
+mod sym;
+//mod iterator;
 //mod f32;
 //mod f16;
 //mod rugfloat;
@@ -12,7 +13,7 @@ mod iterator;
 use std::rc::Rc;
 
 pub enum JohnsonSolid {
-    SsquarePyramid,
+    SquarePyramid,
     PentagonalPyramid,
     TriangularCupola,
     SquareCupola,
@@ -115,7 +116,7 @@ trait PseudoField<T> {
     fn one() -> Self;
 }
 
-trait Point<T, U>
+trait Point<T,U>
 where
     U: PseudoField<T>,
 {
@@ -160,3 +161,4 @@ where
         .fold(U::zero(), |acc, val| acc.add(&val))
         .sqrt()
 }
+
