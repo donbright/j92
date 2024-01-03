@@ -7,12 +7,14 @@ use crate::PseudoField;
 use rug::{Integer, Rational};
 use rug::ops::Pow;
 use std::str::FromStr;
+use std::fmt;
 
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct FieldSym(String);
 
 fn to_rat(decimal_str: &String) -> Result<Rational, Box<dyn std::error::Error>> {
+	
+	// for decimal ascii floating point, like 1.2345
     let parts: Vec<&str> = decimal_str.split('.').collect();
     let digits_after_point = parts.get(1).map_or(0, |x| x.len());
 
@@ -25,31 +27,55 @@ fn to_rat(decimal_str: &String) -> Result<Rational, Box<dyn std::error::Error>> 
     Ok(Rational::from((numerator, denominator)))
 }
 
+#[test]
+fn test_to_rat() {
+    let a = to_rat(&"1.2".to_string()).unwrap();
+    assert!(a==Rational::from((12,10)));
+}
+
 impl FromStr for FieldSym {
     type Err = Box<dyn std::error::Error>;
     fn from_str(s: &str) -> Result<FieldSym, Self::Err> {
 		match to_rat(&s.to_string()) {
             Ok(num) => Ok(FieldSym(format!("{:?}",num))),
-            Err(e) => Err(e),
+            Err(e) => Ok(FieldSym((&s).to_string())),
         }
+    }
+}
+
+#[test]
+fn test_sym_fromstr() {
+    assert!(FieldSym::from_str("1").unwrap().to_string()=="1");
+    assert!(FieldSym::from_str("a").unwrap().to_string()=="a");
+}
+
+impl fmt::Display for FieldSym {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
 
 impl PseudoField<String> for FieldSym {
     fn add(&self, other: &Self) -> Self {
-		let rat = to_rat(&self.0).unwrap() + to_rat(&other.0).unwrap();
-        FieldSym(format!("{:?}",rat))
+		match(to_rat(&self.0), to_rat(&other.0)) {
+			(Ok(r1),Ok(r2))=>FieldSym(format!("{:?}",r1+r2)),
+			_=>FieldSym(format!("{}+{}",self.0,other.0)),
+		}
     }
 
     fn sub(&self, other: &Self) -> Self {
-		let rat = to_rat(&self.0).unwrap() - to_rat(&other.0).unwrap();
-        FieldSym(format!("{:?}",rat))
+		match(to_rat(&self.0), to_rat(&other.0)) {
+			(Ok(r1),Ok(r2))=>FieldSym(format!("{:?}",r1-r2)),
+			_=>FieldSym(format!("{}-{}",self.0,other.0)),
+		}
     }
 
     fn mul(&self, other: &Self) -> Self {
-		let rat = to_rat(&self.0).unwrap() * to_rat(&other.0).unwrap();
-        FieldSym(format!("{:?}",rat))
+		match(to_rat(&self.0), to_rat(&other.0)) {
+			(Ok(r1),Ok(r2))=>FieldSym(format!("{:?}",r1*r2)),
+			_=>FieldSym(format!("{}{}",self.0,other.0)),
+		}
     }
 
     fn sqrt(&self) -> Self {
@@ -66,10 +92,42 @@ impl PseudoField<String> for FieldSym {
 }
 
 #[test]
-fn test_field_string_add() {
+fn test_field_sym_basic() {
+    let a = "1.2".to_sym();
+    assert_eq!(a.to_string(),"6/5".to_string());
+}
+
+
+#[test]
+fn test_field_sym_add() {
     let a = FieldSym("1.0".to_string());
     let b = FieldSym("2.0".to_string());
     assert_eq!(a.add(&b).0, "3".to_string());
+    let a2 = FieldSym("1.0".to_string());
+    let b2 = FieldSym("-2.0".to_string());
+    assert_eq!(a2.add(&b2).0, "-1".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("b".to_string());
+    assert_eq!(a.add(&b).0, "a+b".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("2".to_string());
+    assert_eq!(a.add(&b).0, "a+2".to_string());
+    let a = FieldSym("2".to_string());
+    let b = FieldSym("a".to_string());
+    assert_eq!(a.add(&b).0, "2+a".to_string());
+}
+
+#[test]
+fn test_field_sym_mul() {
+    let a3 = FieldSym("4".to_string());
+    let b3 = FieldSym("5".to_string());
+    assert_eq!(a3.mul(&b3).0, "20".to_string());
+    let a3 = FieldSym("a".to_string());
+    let b3 = FieldSym("b".to_string());
+    assert_eq!(a3.mul(&b3).0, "ab".to_string());
+    let a3 = FieldSym("2".to_string());
+    let b3 = FieldSym("b".to_string());
+    assert_eq!(a3.mul(&b3).0, "2b".to_string());
 }
 
 #[derive(Clone, Debug)]
@@ -122,7 +180,7 @@ trait ToSym {
 
 impl ToSym for str {
     fn to_sym(&self) -> FieldSym {
-        FieldSym(self.to_string())
+        FieldSym::from_str(&self.to_string()).unwrap()
     }
 }
 
