@@ -54,7 +54,7 @@ impl Point<f64, FieldF64> for PointF64 {
 }
 
 #[test]
-fn test_PointF64() {
+fn test_point_f644() {
     let point1 = PointF64 {
         x: FieldF64(1.0),
         y: FieldF64(2.0),
@@ -86,7 +86,7 @@ where
 }
 
 #[test]
-fn test_EdgeF64() {
+fn test_edge_f644() {
     let point1 = PointF64 {
         x: FieldF64(1.0),
         y: FieldF64(2.0),
@@ -119,7 +119,7 @@ where
 }
 
 #[test]
-fn test_FaceF64() {
+fn test_face_f64() {
     let point1 = PointF64 {
         x: FieldF64(1.0),
         y: FieldF64(2.0),

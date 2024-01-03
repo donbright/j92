@@ -8,6 +8,7 @@ use rug::{Integer, Rational};
 use rug::ops::Pow;
 use std::str::FromStr;
 
+
 #[derive(Clone, Debug)]
 struct FieldSym(String);
 
@@ -22,6 +23,16 @@ fn to_rat(decimal_str: &String) -> Result<Rational, Box<dyn std::error::Error>> 
     let denominator = Integer::from(10).pow(digits_after_point as u32);
 
     Ok(Rational::from((numerator, denominator)))
+}
+
+impl FromStr for FieldSym {
+    type Err = Box<dyn std::error::Error>;
+    fn from_str(s: &str) -> Result<FieldSym, Self::Err> {
+		match to_rat(&s.to_string()) {
+            Ok(num) => Ok(FieldSym(format!("{:?}",num))),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 
@@ -55,10 +66,10 @@ impl PseudoField<String> for FieldSym {
 }
 
 #[test]
-fn test_field_String_add() {
+fn test_field_string_add() {
     let a = FieldSym("1.0".to_string());
     let b = FieldSym("2.0".to_string());
-    assert_eq!(a.add(&b).0, "3.0".to_string());
+    assert_eq!(a.add(&b).0, "3".to_string());
 }
 
 #[derive(Clone, Debug)]
@@ -69,12 +80,12 @@ struct PointSym {
 
 impl Point<String, FieldSym> for PointSym {
     fn coordinates(&self) -> Box<dyn Iterator<Item = FieldSym>> {
-        Box::new(vec![self.x, self.y].into_iter())
+        Box::new(vec![self.x.clone(), self.y.clone()].into_iter())
     }
 }
 
 #[test]
-fn test_PointSym() {
+fn test_point_sym() {
     let point1 = PointSym {
         x: FieldSym("1.0".to_string()),
         y: FieldSym("2.0".to_string()),
@@ -105,15 +116,25 @@ where
     }
 }
 
+trait ToSym {
+    fn to_sym(&self) -> FieldSym;
+}
+
+impl ToSym for str {
+    fn to_sym(&self) -> FieldSym {
+        FieldSym(self.to_string())
+    }
+}
+
 #[test]
-fn test_EdgeSym() {
+fn test_edge_sym() {
     let point1 = PointSym {
-        x: FieldSym(1.0),
-        y: FieldSym(2.0),
+        x: "1".to_sym(),
+        y: "2".to_sym(),
     };
     let point2 = PointSym {
-        x: FieldSym(4.0),
-        y: FieldSym(6.0),
+        x: "4".to_sym(),
+        y: "6".to_sym(),
     };
     let e1 = EdgeSym {
         start: point1,
@@ -139,31 +160,31 @@ where
 }
 
 #[test]
-fn test_FaceSym() {
+fn test_face_sym() {
     let point1 = PointSym {
-        x: FieldSym(1.0),
-        y: FieldSym(2.0),
+        x: "1".to_sym(),
+        y: "2".to_sym(),
     };
     let point2 = PointSym {
-        x: FieldSym(4.0),
-        y: FieldSym(6.0),
+        x: "4".to_sym(),
+        y: "6".to_sym(),
     };
     let point3 = PointSym {
-        x: FieldSym(0.0),
-        y: FieldSym(0.0),
+        x: "0".to_sym(),
+        y: "0".to_sym(),
     };
 
     let e1 = EdgeSym {
-        start: point1,
-        end: point2,
+        start: point1.clone(),
+        end: point2.clone(),
     };
     let e2 = EdgeSym {
-        start: point2,
-        end: point3,
+        start: point2.clone(),
+        end: point3.clone(),
     };
     let e3 = EdgeSym {
-        start: point3,
-        end: point1,
+        start: point3.clone(),
+        end: point1.clone(),
     };
     let f = FaceSym {
         edges: vec![e1, e2, e3],
