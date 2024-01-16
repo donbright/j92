@@ -17,7 +17,9 @@ use std::str::FromStr;
 #[derive(Clone, Debug, PartialEq)]
 struct FieldSym(String);
 
-fn to_rat(decimal_str: &String) -> Result<Rational, Box<dyn std::error::Error>> {
+fn to_rat(
+    decimal_str: &String,
+) -> Result<Rational, Box<dyn std::error::Error>> {
     // for decimal ascii floating point, like 1.2345
     let parts: Vec<&str> = decimal_str.split('.').collect();
     let digits_after_point = parts.get(1).map_or(0, |x| x.len());
@@ -73,8 +75,23 @@ impl PseudoField<String> for FieldSym {
     fn add(&self, other: &Self) -> Self {
         match (to_rat(&self.0), to_rat(&other.0)) {
             (Ok(r1), Ok(r2)) => FieldSym(format!("{:?}", r1 + r2)),
-            (Ok(r1), Err(e)) if r1 == Rational::from((0, 1)) => FieldSym(format!("{}", other.0)),
-            (Err(e), Ok(r2)) if r2 == Rational::from((0, 1)) => FieldSym(format!("{}", self.0)),
+            (Ok(r1), Err(e)) if r1 == Rational::from((0, 1)) => {
+                FieldSym(format!("{}", other.0))
+            }
+            (Err(e), Ok(r2)) if r2 == Rational::from((0, 1)) => {
+                FieldSym(format!("{}", self.0))
+            }
+            _ if self.equal(&other) => {
+                if other.0.starts_with("-") {
+                    FieldSym("-2".to_string())
+                        .mul(&FieldSym(other.0[1..].to_string()))
+                } else {
+                    FieldSym("2".to_string()).mul(&other)
+                }
+            }
+            _ if other.0.starts_with("-") => {
+                FieldSym(format!("{}{}", self.0, other.0))
+            }
             _ => FieldSym(format!("{}+{}", self.0, other.0)),
         }
     }
@@ -86,18 +103,33 @@ impl PseudoField<String> for FieldSym {
     fn mul(&self, other: &Self) -> Self {
         match (to_rat(&self.0), to_rat(&other.0)) {
             (Ok(r1), Ok(r2)) => FieldSym(format!("{:?}", r1 * r2)),
-            (Ok(r1), Err(e)) if r1 == Rational::from((1, 1)) => FieldSym(format!("{}", other.0)),
-            (Err(e), Ok(r2)) if r2 == Rational::from((1, 1)) => FieldSym(format!("{}", self.0)),
-            (Ok(r1), Err(e)) if r1 == Rational::from((-1, 1)) => FieldSym(format!("-{}", other.0)),
-            (Err(e), Ok(r2)) if r2 == Rational::from((-1, 1)) => FieldSym(format!("-{}", self.0)),
-            (Ok(r1), Err(e)) if r1 == Rational::from((0, 1)) => FieldSym::zero(),
-            (Err(e), Ok(r2)) if r2 == Rational::from((0, 1)) => FieldSym::zero(),
+            (Ok(r1), Err(e)) if r1 == Rational::from((1, 1)) => {
+                FieldSym(format!("{}", other.0))
+            }
+            (Err(e), Ok(r2)) if r2 == Rational::from((1, 1)) => {
+                FieldSym(format!("{}", self.0))
+            }
+            (Ok(r1), Err(e)) if r1 == Rational::from((-1, 1)) => {
+                FieldSym(format!("-{}", other.0))
+            }
+            (Err(e), Ok(r2)) if r2 == Rational::from((-1, 1)) => {
+                FieldSym(format!("-{}", self.0))
+            }
+            (Ok(r1), Err(e)) if r1 == Rational::from((0, 1)) => {
+                FieldSym::zero()
+            }
+            (Err(e), Ok(r2)) if r2 == Rational::from((0, 1)) => {
+                FieldSym::zero()
+            }
             _ if self.equal(&other) => {
                 if other.0.starts_with("-") {
                     FieldSym(format!("{}²", &other.0[1..]))
                 } else {
                     FieldSym(format!("{}²", &other.0))
                 }
+            }
+            _ if self.0.starts_with("-") && other.0.starts_with("-") => {
+                FieldSym(format!("{}⋅{}", &self.0[1..], &other.0[1..]))
             }
             _ => FieldSym(format!("{}⋅{}", self.0, other.0)),
         }
@@ -113,15 +145,22 @@ impl PseudoField<String> for FieldSym {
     fn sqrt(&self) -> Self {
         match to_rat(&self.0) {
             Ok(n) => {
-                if n.numer().is_perfect_square() && n.denom().is_perfect_square() {
+                if n.numer().is_perfect_square()
+                    && n.denom().is_perfect_square()
+                {
                     FieldSym(format!(
                         "{}",
-                        Rational::from((n.numer().clone().sqrt(), n.denom().clone().sqrt()))
+                        Rational::from((
+                            n.numer().clone().sqrt(),
+                            n.denom().clone().sqrt()
+                        ))
                     ))
                 } else {
                     FieldSym(format!("√{}", self))
                 }
             }
+            Err(e) if self.0.contains("+") => FieldSym(format!("√({})", self)),
+            Err(e) if self.0.contains("-") => FieldSym(format!("√({})", self)),
             Err(e) => FieldSym(format!("√{}", self)),
         }
     }
@@ -170,6 +209,12 @@ fn test_field_sym_add() {
     let a = FieldSym("0".to_string());
     let b = FieldSym("0.0".to_string());
     assert_eq!(a.add(&b).0, "0".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("a".to_string());
+    assert_eq!(a.add(&b).0, "2⋅a".to_string());
+    let a = FieldSym("-a".to_string());
+    let b = FieldSym("-a".to_string());
+    assert_eq!(a.add(&b).0, "-2⋅a".to_string());
 }
 
 #[test]
@@ -191,7 +236,7 @@ fn test_field_sym_sub() {
     assert_eq!(a.sub(&b).0, "2-a".to_string());
     let a = FieldSym("0".to_string());
     let b = FieldSym("a".to_string());
-    assert_eq!(a.sub(&b).0, "a".to_string());
+    assert_eq!(a.sub(&b).0, "-a".to_string());
     let a = FieldSym("a".to_string());
     let b = FieldSym("0".to_string());
     assert_eq!(a.sub(&b).0, "a".to_string());
@@ -306,7 +351,7 @@ fn test_point_sym() {
     let dist = distance(&point1, &point2);
     println!("{}", q);
     assert!(q.0 == "a²+b²");
-    assert!(dist.0 == "√a²+b²");
+    assert!(dist.0 == "√(a²+b²)");
 }
 
 #[derive(Debug)]
