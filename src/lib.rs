@@ -168,3 +168,14 @@ where
 {
     quadrance(p1, p2).sqrt()
 }
+
+fn is_regular<Z,X,T,U>(f:&dyn Face<Z, X, T, U>) -> bool
+where
+    Z: Edge<X, T, U>,
+    X: Point<T, U>,
+    U: PseudoField<T> + Clone,
+{
+    let ds: Vec<_>  = f.edges().map(|e| quadrance( &e.points().next().unwrap(),&e.points().next().unwrap())).collect();
+    ds.iter().all( |d| d .equal ( &ds[0] )  )
+}
+

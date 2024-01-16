@@ -171,6 +171,9 @@ is why it has it's own Point type and other stuff.
 
 The dependency count for examples can be high. 
 
+# Artificial Intelligence Disclosure
+
+This code was written with the assistance of ChatGPT
 
 # The end
 
