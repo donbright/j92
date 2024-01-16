@@ -150,6 +150,12 @@ or integers entirely, so hence the name PseudoField.
 
 That is beyond the scope of this project.
 
+# Why are there no unit tests of generic library functions
+
+Its a bit hard and also you know, some number types won't have
+working concept of 'equals' like others do. So that is left up to
+the specific PseudoField being used. 
+
 # Design Philosophy
 
 This only does the ninety-two Johnson Solids, no more and no less. 
