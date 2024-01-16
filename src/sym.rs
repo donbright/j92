@@ -1,14 +1,14 @@
-use crate::quadrance;
 use crate::distance;
+use crate::quadrance;
 use crate::Edge;
 use crate::Face;
 use crate::Point;
 use crate::Polyhedron;
 use crate::PseudoField;
-use rug::{Integer, Rational};
 use rug::ops::Pow;
-use std::str::FromStr;
+use rug::{Integer, Rational};
 use std::fmt;
+use std::str::FromStr;
 
 // This is symbolic number type
 // however we alsu use RugRat Rational and Integer for certain calculations
@@ -18,8 +18,7 @@ use std::fmt;
 struct FieldSym(String);
 
 fn to_rat(decimal_str: &String) -> Result<Rational, Box<dyn std::error::Error>> {
-	
-	// for decimal ascii floating point, like 1.2345
+    // for decimal ascii floating point, like 1.2345
     let parts: Vec<&str> = decimal_str.split('.').collect();
     let digits_after_point = parts.get(1).map_or(0, |x| x.len());
 
@@ -35,14 +34,24 @@ fn to_rat(decimal_str: &String) -> Result<Rational, Box<dyn std::error::Error>> 
 #[test]
 fn test_to_rat() {
     let a = to_rat(&"1.2".to_string()).unwrap();
-    assert!(a==Rational::from((12,10)));
+    assert!(a == Rational::from((12, 10)));
+    let a = to_rat(&"1.0".to_string()).unwrap();
+    assert!(a == Rational::from((1, 1)));
+    let a = to_rat(&"0.0".to_string()).unwrap();
+    assert!(a == Rational::from((0, 1)));
+    let a = to_rat(&"0".to_string()).unwrap();
+    assert!(a == Rational::from((0, 1)));
+    let a = to_rat(&"-0".to_string()).unwrap();
+    assert!(a == Rational::from((0, 1)));
+    let a = to_rat(&"-0.0".to_string()).unwrap();
+    assert!(a == Rational::from((0, 1)));
 }
 
 impl FromStr for FieldSym {
     type Err = Box<dyn std::error::Error>;
     fn from_str(s: &str) -> Result<FieldSym, Self::Err> {
-		match to_rat(&s.to_string()) {
-            Ok(num) => Ok(FieldSym(format!("{:?}",num))),
+        match to_rat(&s.to_string()) {
+            Ok(num) => Ok(FieldSym(format!("{:?}", num))),
             Err(e) => Ok(FieldSym((&s).to_string())),
         }
     }
@@ -50,8 +59,8 @@ impl FromStr for FieldSym {
 
 #[test]
 fn test_sym_fromstr() {
-    assert!(FieldSym::from_str("1").unwrap().to_string()=="1");
-    assert!(FieldSym::from_str("a").unwrap().to_string()=="a");
+    assert!(FieldSym::from_str("1").unwrap().to_string() == "1");
+    assert!(FieldSym::from_str("a").unwrap().to_string() == "a");
 }
 
 impl fmt::Display for FieldSym {
@@ -60,32 +69,43 @@ impl fmt::Display for FieldSym {
     }
 }
 
-
 impl PseudoField<String> for FieldSym {
     fn add(&self, other: &Self) -> Self {
-		match(to_rat(&self.0), to_rat(&other.0)) {
-			(Ok(r1),Ok(r2))=>FieldSym(format!("{:?}",r1+r2)),
-			_=>FieldSym(format!("{}+{}",self.0,other.0)),
-		}
+        match (to_rat(&self.0), to_rat(&other.0)) {
+            (Ok(r1), Ok(r2)) => FieldSym(format!("{:?}", r1 + r2)),
+            (Ok(r1), Err(e)) if r1 == Rational::from((0, 1)) => FieldSym(format!("{}", other.0)),
+            (Err(e), Ok(r2)) if r2 == Rational::from((0, 1)) => FieldSym(format!("{}", self.0)),
+            _ => FieldSym(format!("{}+{}", self.0, other.0)),
+        }
     }
 
     fn sub(&self, other: &Self) -> Self {
-		match(to_rat(&self.0), to_rat(&other.0)) {
-			(Ok(r1),Ok(r2))=>FieldSym(format!("{:?}",r1-r2)),
-			_=>FieldSym(format!("{}-{}",self.0,other.0)),
-		}
+        self.add(&FieldSym("-1".to_string()).mul(&other))
     }
 
     fn mul(&self, other: &Self) -> Self {
-		match(to_rat(&self.0), to_rat(&other.0)) {
-			(Ok(r1),Ok(r2))=>FieldSym(format!("{:?}",r1*r2)),
-			_=>FieldSym(format!("{}{}",self.0,other.0)),
-		}
+        match (to_rat(&self.0), to_rat(&other.0)) {
+            (Ok(r1), Ok(r2)) => FieldSym(format!("{:?}", r1 * r2)),
+            (Ok(r1), Err(e)) if r1 == Rational::from((1, 1)) => FieldSym(format!("{}", other.0)),
+            (Err(e), Ok(r2)) if r2 == Rational::from((1, 1)) => FieldSym(format!("{}", self.0)),
+            (Ok(r1), Err(e)) if r1 == Rational::from((-1, 1)) => FieldSym(format!("-{}", other.0)),
+            (Err(e), Ok(r2)) if r2 == Rational::from((-1, 1)) => FieldSym(format!("-{}", self.0)),
+            (Ok(r1), Err(e)) if r1 == Rational::from((0, 1)) => FieldSym::zero(),
+            (Err(e), Ok(r2)) if r2 == Rational::from((0, 1)) => FieldSym::zero(),
+            _ if self.equal(&other) => {
+                if other.0.starts_with("-") {
+                    FieldSym(format!("{}²", &other.0[1..]))
+                } else {
+                    FieldSym(format!("{}²", &other.0))
+                }
+            }
+            _ => FieldSym(format!("{}⋅{}", self.0, other.0)),
+        }
     }
 
     fn equal(&self, other: &Self) -> bool {
         // question. how do we use this.
-        // can we use equality saturation? 
+        // can we use equality saturation?
         // can we call the Egg system?
         self.to_string() == other.to_string()
     }
@@ -94,17 +114,15 @@ impl PseudoField<String> for FieldSym {
         match to_rat(&self.0) {
             Ok(n) => {
                 if n.numer().is_perfect_square() && n.denom().is_perfect_square() {
-                    FieldSym(format!("{}",
-Rational::from( ( n.numer().clone().sqrt() , 
-                  n.denom().clone().sqrt() ) )
-))
+                    FieldSym(format!(
+                        "{}",
+                        Rational::from((n.numer().clone().sqrt(), n.denom().clone().sqrt()))
+                    ))
                 } else {
-                    FieldSym(format!("√{}",self))
+                    FieldSym(format!("√{}", self))
                 }
             }
-            Err(e) => {
-                FieldSym(format!("√{}",self))
-            }
+            Err(e) => FieldSym(format!("√{}", self)),
         }
     }
 
@@ -120,9 +138,8 @@ Rational::from( ( n.numer().clone().sqrt() ,
 #[test]
 fn test_field_sym_basic() {
     let a = "1.2".to_sym();
-    assert_eq!(a.to_string(),"6/5".to_string());
+    assert_eq!(a.to_string(), "6/5".to_string());
 }
-
 
 #[test]
 fn test_field_sym_add() {
@@ -141,19 +158,86 @@ fn test_field_sym_add() {
     let a = FieldSym("2".to_string());
     let b = FieldSym("a".to_string());
     assert_eq!(a.add(&b).0, "2+a".to_string());
+    let a = FieldSym("0".to_string());
+    let b = FieldSym("a".to_string());
+    assert_eq!(a.add(&b).0, "a".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("0".to_string());
+    assert_eq!(a.add(&b).0, "a".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("0.0".to_string());
+    assert_eq!(a.add(&b).0, "a".to_string());
+    let a = FieldSym("0".to_string());
+    let b = FieldSym("0.0".to_string());
+    assert_eq!(a.add(&b).0, "0".to_string());
+}
+
+#[test]
+fn test_field_sym_sub() {
+    let a = FieldSym("1.0".to_string());
+    let b = FieldSym("2.0".to_string());
+    assert_eq!(a.sub(&b).0, "-1".to_string());
+    let a2 = FieldSym("1.0".to_string());
+    let b2 = FieldSym("-2.0".to_string());
+    assert_eq!(a2.sub(&b2).0, "3".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("b".to_string());
+    assert_eq!(a.sub(&b).0, "a-b".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("2".to_string());
+    assert_eq!(a.sub(&b).0, "a-2".to_string());
+    let a = FieldSym("2".to_string());
+    let b = FieldSym("a".to_string());
+    assert_eq!(a.sub(&b).0, "2-a".to_string());
+    let a = FieldSym("0".to_string());
+    let b = FieldSym("a".to_string());
+    assert_eq!(a.sub(&b).0, "a".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("0".to_string());
+    assert_eq!(a.sub(&b).0, "a".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("0.0".to_string());
+    assert_eq!(a.sub(&b).0, "a".to_string());
+    let a = FieldSym("0".to_string());
+    let b = FieldSym("0.0".to_string());
+    assert_eq!(a.sub(&b).0, "0".to_string());
 }
 
 #[test]
 fn test_field_sym_mul() {
-    let a3 = FieldSym("4".to_string());
-    let b3 = FieldSym("5".to_string());
-    assert_eq!(a3.mul(&b3).0, "20".to_string());
-    let a3 = FieldSym("a".to_string());
-    let b3 = FieldSym("b".to_string());
-    assert_eq!(a3.mul(&b3).0, "ab".to_string());
-    let a3 = FieldSym("2".to_string());
-    let b3 = FieldSym("b".to_string());
-    assert_eq!(a3.mul(&b3).0, "2b".to_string());
+    let a = FieldSym("4".to_string());
+    let b = FieldSym("5".to_string());
+    assert_eq!(a.mul(&b).0, "20".to_string());
+    let a = FieldSym("a".to_string());
+    let b = FieldSym("b".to_string());
+    assert_eq!(a.mul(&b).0, "a⋅b".to_string());
+    let a = FieldSym("2".to_string());
+    let b = FieldSym("b".to_string());
+    assert_eq!(a.mul(&b).0, "2⋅b".to_string());
+    let a = FieldSym("2".to_string());
+    let b = FieldSym("-3".to_string());
+    assert_eq!(a.mul(&b).0, "-6".to_string());
+    let a = FieldSym("-3".to_string());
+    let b = FieldSym("-3".to_string());
+    assert_eq!(a.mul(&b).0, "9".to_string());
+    let a = FieldSym("0.0".to_string());
+    let b = FieldSym("b".to_string());
+    assert_eq!(a.mul(&b).0, "0".to_string());
+    let a = FieldSym("1".to_string());
+    let b = FieldSym("b".to_string());
+    assert_eq!(a.mul(&b).0, "b".to_string());
+    let a = FieldSym("b".to_string());
+    let b = FieldSym("1".to_string());
+    assert_eq!(a.mul(&b).0, "b".to_string());
+    let a = FieldSym("1".to_string());
+    let b = FieldSym("-b".to_string());
+    assert_eq!(a.mul(&b).0, "-b".to_string());
+    let a = FieldSym("b".to_string());
+    let b = FieldSym("b".to_string());
+    assert_eq!(a.mul(&b).0, "b²".to_string());
+    let a = FieldSym("-b".to_string());
+    let b = FieldSym("-b".to_string());
+    assert_eq!(a.mul(&b).0, "b²".to_string());
 }
 
 #[test]
@@ -209,6 +293,20 @@ fn test_point_sym() {
     assert!(q.0 == "2");
     assert!(dist.0 == "√2");
 
+    let point1 = PointSym {
+        x: FieldSym("0.0".to_string()),
+        y: FieldSym("0.0".to_string()),
+    };
+    let point2 = PointSym {
+        x: FieldSym("a".to_string()),
+        y: FieldSym("b".to_string()),
+    };
+
+    let q = quadrance(&point1, &point2);
+    let dist = distance(&point1, &point2);
+    println!("{}", q);
+    assert!(q.0 == "a²+b²");
+    assert!(dist.0 == "√a²+b²");
 }
 
 #[derive(Debug)]
@@ -319,4 +417,3 @@ where
         Box::new(self.faces.clone().into_iter())
     }
 }
-

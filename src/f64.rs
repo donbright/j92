@@ -22,7 +22,7 @@ impl PseudoField<f64> for FieldF64 {
     }
 
     fn equal(&self, other: &Self) -> bool {
-        format!("{:?}",self) == format!("{:?}",other)
+        format!("{:?}", self) == format!("{:?}", other)
     }
 
     fn sqrt(&self) -> Self {

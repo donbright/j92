@@ -111,13 +111,13 @@ trait PseudoField<T> {
     fn add(&self, other: &Self) -> Self;
     fn sub(&self, other: &Self) -> Self;
     fn mul(&self, other: &Self) -> Self;
-    fn equal(&self, other: &Self)-> bool;
+    fn equal(&self, other: &Self) -> bool;
     fn sqrt(&self) -> Self;
     fn zero() -> Self;
     fn one() -> Self;
 }
 
-trait Point<T,U>
+trait Point<T, U>
 where
     U: PseudoField<T>,
 {
@@ -152,7 +152,7 @@ where
 }
 
 fn quadrance<T, U>(p1: &dyn Point<T, U>, p2: &dyn Point<T, U>) -> U
-where 
+where
     U: PseudoField<T> + Clone,
 {
     p1.coordinates()
@@ -166,6 +166,5 @@ fn distance<T, U>(p1: &dyn Point<T, U>, p2: &dyn Point<T, U>) -> U
 where
     U: PseudoField<T> + Clone,
 {
-        quadrance(p1,p2).sqrt()
+    quadrance(p1, p2).sqrt()
 }
-
