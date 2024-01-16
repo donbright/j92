@@ -65,12 +65,16 @@ mod tests {
 
     #[test]
     fn test_PointRugRat() {
-    let point1 = PointRugRat { x: RugRat(Rational::from((1,1))), y: RugRat(Rational::from((2,1))) };
-    let point2 = PointRugRat { x: RugRat(Rational::from((4,1))), y: RugRat(Rational::from((6,1))) };
+    let point1 = PointRugRat { x: RugRat(Rational::from((0,1))), y: RugRat(Rational::from((0,1))) };
+    let point2 = PointRugRat { x: RugRat(Rational::from((4,1))), y: RugRat(Rational::from((3,1))) };
 
-    let dist = distance(&point1, &point2);
+    let q = quadrance(&point1, &point2);
+    let d = distance(&point1, &point2);
 
-    println!("Distance: {}", dist.0);
+    println!("Distance: {}", d.0);
+    println!("Quadrance: {}", q.0);
+        assert_eq( q.0, RugRat(Rational::from(25,1)); 
+        assert_eq( d.0, RugRat(Rational::from(5,1)); 
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::quadrance;
 use crate::distance;
 use crate::Edge;
 use crate::Face;
@@ -8,6 +9,10 @@ use rug::{Integer, Rational};
 use rug::ops::Pow;
 use std::str::FromStr;
 use std::fmt;
+
+// This is symbolic number type
+// however we alsu use RugRat Rational and Integer for certain calculations
+// (these are Big types limited only by your system amount of memory)
 
 #[derive(Clone, Debug, PartialEq)]
 struct FieldSym(String);
@@ -78,8 +83,26 @@ impl PseudoField<String> for FieldSym {
 		}
     }
 
+    fn equal(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string()
+    }
+
     fn sqrt(&self) -> Self {
-        FieldSym(format!("√{:?}",self))
+        match to_rat(&self.0) {
+            Ok(n) => {
+                if n.numer().is_perfect_square() && n.denom().is_perfect_square() {
+                    FieldSym(format!("{}",
+Rational::from( ( n.numer().clone().sqrt() , 
+                  n.denom().clone().sqrt() ) )
+))
+                } else {
+                    FieldSym(format!("√{}",self))
+                }
+            }
+            Err(e) => {
+                FieldSym(format!("√{}",self))
+            }
+        }
     }
 
     fn zero() -> Self {
@@ -130,6 +153,16 @@ fn test_field_sym_mul() {
     assert_eq!(a3.mul(&b3).0, "2b".to_string());
 }
 
+#[test]
+fn test_field_sym_sqrt() {
+    let a = FieldSym("25".to_string());
+    assert_eq!(a.sqrt().to_string(), "5".to_string());
+    let a = FieldSym("3".to_string());
+    assert_eq!(a.sqrt().to_string(), "√3".to_string());
+    let a = FieldSym("a".to_string());
+    assert_eq!(a.sqrt().to_string(), "√a".to_string());
+}
+
 #[derive(Clone, Debug)]
 struct PointSym {
     x: FieldSym,
@@ -153,9 +186,13 @@ fn test_point_sym() {
         y: FieldSym("6.0".to_string()),
     };
 
+    let q = quadrance(&point1, &point2);
     let dist = distance(&point1, &point2);
 
+    println!("Quadrance: {}", q.0);
     println!("Distance: {}", dist.0);
+    assert!(dist.0 == "5");
+    assert!(q.0 == "25");
 }
 
 #[derive(Debug)]

@@ -111,6 +111,7 @@ trait PseudoField<T> {
     fn add(&self, other: &Self) -> Self;
     fn sub(&self, other: &Self) -> Self;
     fn mul(&self, other: &Self) -> Self;
+    fn equal(&self, other: &Self)-> bool;
     fn sqrt(&self) -> Self;
     fn zero() -> Self;
     fn one() -> Self;
@@ -150,8 +151,8 @@ where
     fn faces(&self) -> Box<dyn Iterator<Item = M>>;
 }
 
-fn distance<T, U>(p1: &dyn Point<T, U>, p2: &dyn Point<T, U>) -> U
-where
+fn quadrance<T, U>(p1: &dyn Point<T, U>, p2: &dyn Point<T, U>) -> U
+where 
     U: PseudoField<T> + Clone,
 {
     p1.coordinates()
@@ -159,6 +160,12 @@ where
         .map(|(coord1, coord2)| coord1.sub(&coord2))
         .map(|x| x.mul(&x))
         .fold(U::zero(), |acc, val| acc.add(&val))
-        .sqrt()
+}
+
+fn distance<T, U>(p1: &dyn Point<T, U>, p2: &dyn Point<T, U>) -> U
+where
+    U: PseudoField<T> + Clone,
+{
+        quadrance(p1,p2).sqrt()
 }
 
