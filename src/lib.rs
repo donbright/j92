@@ -136,9 +136,13 @@ trait Face<Z, X, T, U>
 where
     Z: Edge<X, T, U>,
     X: Point<T, U>,
-    U: PseudoField<T>,
+    U: PseudoField<T> + Clone,
 {
     fn edges(&self) -> Box<dyn Iterator<Item = Z>>;
+    fn is_regular(&self)->bool {
+    let ds: Vec<_>  = self.edges().map(|e| quadrance( &e.points().next().unwrap(),&e.points().next().unwrap())).collect();
+    ds.iter().all( |d| d .equal ( &ds[0] )  ) 
+    }
 }
 
 trait Polyhedron<M, Z, X, T, U>
@@ -146,7 +150,7 @@ where
     M: Face<Z, X, T, U>,
     Z: Edge<X, T, U>,
     X: Point<T, U>,
-    U: PseudoField<T>,
+    U: PseudoField<T> + Clone,
 {
     fn faces(&self) -> Box<dyn Iterator<Item = M>>;
 }
@@ -169,13 +173,11 @@ where
     quadrance(p1, p2).sqrt()
 }
 
-fn is_regular<Z,X,T,U>(f:&dyn Face<Z, X, T, U>) -> bool
+/*fn is_regular_face<Z,X,T,U>(f:&dyn Face<Z, X, T, U>) -> bool
 where
     Z: Edge<X, T, U>,
     X: Point<T, U>,
     U: PseudoField<T> + Clone,
 {
-    let ds: Vec<_>  = f.edges().map(|e| quadrance( &e.points().next().unwrap(),&e.points().next().unwrap())).collect();
-    ds.iter().all( |d| d .equal ( &ds[0] )  )
 }
-
+*/

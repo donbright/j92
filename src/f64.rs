@@ -115,7 +115,7 @@ impl<Z, X, T, U> Face<Z, X, T, U> for FaceF64<Z>
 where
     Z: Edge<X, T, U> + 'static + Copy,
     X: Point<T, U> + 'static + Copy,
-    U: PseudoField<T>,
+    U: PseudoField<T> + Clone,
 {
     fn edges(&self) -> Box<dyn Iterator<Item = Z>> {
         Box::new(self.edges.clone().into_iter())
@@ -165,7 +165,7 @@ where
     M: Face<Z, X, T, U> + 'static + Copy,
     Z: Edge<X, T, U> + 'static + Copy,
     X: Point<T, U> + 'static + Copy,
-    U: PseudoField<T>,
+    U: PseudoField<T> + Clone,
 {
     fn faces(&self) -> Box<dyn Iterator<Item = M>> {
         Box::new(self.faces.clone().into_iter())
