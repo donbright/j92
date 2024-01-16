@@ -153,6 +153,12 @@ where
     U: PseudoField<T> + Clone,
 {
     fn faces(&self) -> Box<dyn Iterator<Item = M>>;
+    fn is_regular(&self) -> bool {
+        // Regular Polytopes By: H. S. M. Coxeter page 58
+        self.faces().all(|f| f.is_regular())
+        // all faces equal
+        // all solid angles equal
+    }
 }
 
 fn quadrance<T, U>(p1: &dyn Point<T, U>, p2: &dyn Point<T, U>) -> U
@@ -172,12 +178,3 @@ where
 {
     quadrance(p1, p2).sqrt()
 }
-
-/*fn is_regular_face<Z,X,T,U>(f:&dyn Face<Z, X, T, U>) -> bool
-where
-    Z: Edge<X, T, U>,
-    X: Point<T, U>,
-    U: PseudoField<T> + Clone,
-{
-}
-*/
