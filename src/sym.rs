@@ -84,6 +84,9 @@ impl PseudoField<String> for FieldSym {
     }
 
     fn equal(&self, other: &Self) -> bool {
+        // question. how do we use this.
+        // can we use equality saturation? 
+        // can we call the Egg system?
         self.to_string() == other.to_string()
     }
 
@@ -189,10 +192,23 @@ fn test_point_sym() {
     let q = quadrance(&point1, &point2);
     let dist = distance(&point1, &point2);
 
-    println!("Quadrance: {}", q.0);
-    println!("Distance: {}", dist.0);
     assert!(dist.0 == "5");
     assert!(q.0 == "25");
+
+    let point1 = PointSym {
+        x: FieldSym("0.0".to_string()),
+        y: FieldSym("0.0".to_string()),
+    };
+    let point2 = PointSym {
+        x: FieldSym("1.0".to_string()),
+        y: FieldSym("1.0".to_string()),
+    };
+
+    let q = quadrance(&point1, &point2);
+    let dist = distance(&point1, &point2);
+    assert!(q.0 == "2");
+    assert!(dist.0 == "√2");
+
 }
 
 #[derive(Debug)]
